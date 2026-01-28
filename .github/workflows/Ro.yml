@@ -1,26 +1,28 @@
-name: Auto PR Robot
+name: My First Learning Robot
 
+#สั่งให้หุ่นยนต์ทำงานตอนไหน
 on:
   push:
-    branches: [ "add-ing2" ] # หุ่นยนต์จะตื่นมาทำงานเฉพาะตอนเรา Push เข้ากิ่งนี้
+    branches: [ "main", "add-ing2" ] # ทำงานเมื่อมีการ Push เข้ากิ่ง main หรือ add-ing
+  pull_request:
+    branches: [ "main" ]            # ทำงานเมื่อมีคนสร้าง PR เข้าหา main
 
+# กำหนดงานที่หุ่นยนต์ต้องทำ
 jobs:
-  open-pr:
-    runs-on: ubuntu-latest
-    # สำคัญ: ต้องให้สิทธิ์หุ่นยนต์ในการเขียน PR ด้วย
-    permissions:
-      contents: write
-      pull-requests: write
+  say-hello-job:                    # ชื่อกลุ่มงาน 
+    runs-on: ubuntu-latest          # เลือกใช้คอมจำลอง (Linux) ของ GitHub
 
-    steps:
-      - name: 1. เตรียมโค้ด
+    steps:                          # ลำดับขั้นตอนการทำงาน 
+      - name: 1. ดึงโค้ดจากเครื่องเรามาใส่ในเครื่องหุ่นยนต์
         uses: actions/checkout@v4
 
-      - name: 2. สั่งหุ่นยนต์เปิด PR อัตโนมัติ
-        uses: repo-sync/pull-request@v2
-        with:
-          source_branch: "add-ing2"    # กิ่งต้นทาง
-          destination_branch: "main"  # กิ่งปลายทางที่เราอยากรวม
-          pr_title: "หุ่นยนต์ส่งงานครับ: ${{ github.event.head_commit.message }}"
-          pr_body: "PR นี้ถูกสร้างขึ้นโดยอัตโนมัติจากระบบ GitHub Actions"
-          github_token: ${{ secrets.GITHUB_TOKEN }} # กุญแจสำคัญที่ให้หุ่นยนต์ทำงานแทนเรา
+      - name: 2. ให้หุ่นยนต์ทักทายคุณ
+        run: echo "สวัสดีครับคุณเจ้าของโปรเจกต์ หุ่นยนต์ Actions พร้อมทำงานแล้ว!"
+
+      - name: 3. ลองเช็คดูว่าหุ่นยนต์มองเห็นไฟล์ที่เราส่งมาไหม
+        run: |
+          echo "รายการไฟล์ในเครื่องตอนนี้คือ:"
+          ls -R
+
+      - name: 4. แสดงเวลาที่หุ่นยนต์ทำงานเสร็จ
+        run: date
