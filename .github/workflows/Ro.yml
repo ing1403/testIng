@@ -40,7 +40,7 @@ jobs:
         # บรรทัดนี้คือหัวใจสำคัญ! 
         # "ถ้า steps.cpr_step มีเลข PR ส่งมา (แปลว่าไม่ซ้ำ) -> ให้ทำ"
         # "ถ้าไม่มีเลขส่งมา (แปลว่าซ้ำ) -> ให้ข้ามขั้นตอนนี้ไปเลย"
-        if: ${{ steps.cpr_step.outputs.pr_number }}
+        if: ${{ steps.cpr_step.outputs.pr_number }} # branches ที่ pash มาเป็นโค้ดใหม่จริง มันจะเข้าขั้นตอนการ merge
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # ใช้รหัสผ่านของระบบ
         run: |
@@ -49,7 +49,13 @@ jobs:
 
           echo "กำลังทำการ Merge PR หมายเลข ${{ steps.cpr_step.outputs.pr_number }}..."
           # ใช้คำสั่ง gh (GitHub CLI) เพื่อทำการ Merge เข้ากิ่ง main
+          # gh การใช้เครื่องมือของ github
+          # pr merge สั่งว่า ต้องการรวมร่าง (merge) PR นะ
+          # ${{ การบอกเลขเลขที่ PR ที่จะให้ลบ 
+          # --merge วิธีการรวม โดยใน git มีหลายวิธี แต่วิธีนี้คือการรวมแบบปกติที่เก็บประวัติไว้ครบถ้วนที่สุด
+          # --auto ถ้า GitHub ยังประมวลผลไม่เสร็จ (Unstable) คำสั่งนี้จะบอกเซิร์ฟเวอร์ว่า ตอนนี้ถ้ายังไม่พร้อมก็ไม่เป็นไร แต่ทันทีที่เช็คเสร็จแล้ว ให้กด Merge ให้ฉันทันทีเลยนะ
           gh pr merge ${{ steps.cpr_step.outputs.pr_number }} --merge --auto
+          
 
 # เหมือนให้ไฟล์นี้สามารถโทรหา auto delete เมื่อcreate-and-mergeทำงานเสร็จ
   call-delete-job:
