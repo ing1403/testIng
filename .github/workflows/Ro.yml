@@ -1,27 +1,30 @@
 name: Auto Create Pull Request and Merge PR
+
 on:
   push:
     branches-ignore:
       - 'main'
-  
+
 jobs:
+  # Job 1: สร้าง PR และ Merge 
   create-and-merge:
     runs-on: ubuntu-latest
     permissions: 
       contents: write
       pull-requests: write
+    outputs:
+      pr_number: ${{ steps.cpr_step.outputs.pr_number }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ขั้นตอนที่ 1: สร้าง PR (เหมือนเดิม แต่เพิ่ม id เพื่อเอาเลข PR ไปใช้ต่อ)
       - name: Create Pull Request
-        id: cpr_step   # <--- ต้องมี ID เพื่อใช้อ้างอิงตอน Merge
+        id: cpr_step
         uses: repo-sync/pull-request@v2
         with:
           source_branch: "${{ github.ref_name }}"
           destination_branch: "main"
-          pr_title: "PR: รวมงานจากเครื่องของคุณ"
+          pr_title: "PR: รวมงานอัตโนมัติ"
           pr_body: "สร้างและรวมร่างอัตโนมัติโดย GitHub Action"
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -35,31 +38,40 @@ jobs:
             echo "✅ พบของใหม่! สร้าง PR หมายเลข ${{ steps.cpr_step.outputs.pr_number }} แล้ว"
           fi
 
-      # ขั้นตอนที่ 2: สั่ง Merge ทันที (นี่คือส่วนที่เพิ่มเข้ามา)
+      # สั่ง Merge ทันที 
       - name: Merge Pull Request
         # บรรทัดนี้คือหัวใจสำคัญ! 
         # "ถ้า steps.cpr_step มีเลข PR ส่งมา (แปลว่าไม่ซ้ำ) -> ให้ทำ"
         # "ถ้าไม่มีเลขส่งมา (แปลว่าซ้ำ) -> ให้ข้ามขั้นตอนนี้ไปเลย"
-        if: ${{ steps.cpr_step.outputs.pr_number }} # branches ที่ pash มาเป็นโค้ดใหม่จริง มันจะเข้าขั้นตอนการ merge
+        if: ${{ steps.cpr_step.outputs.pr_number }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # ใช้รหัสผ่านของระบบ
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "รอสักครู่เพื่อให้ GitHub ตรวจสอบสถานะ PR..."
           sleep 7
-
           echo "กำลังทำการ Merge PR หมายเลข ${{ steps.cpr_step.outputs.pr_number }}..."
           # ใช้คำสั่ง gh (GitHub CLI) เพื่อทำการ Merge เข้ากิ่ง main
-          # gh การใช้เครื่องมือของ github
-          # pr merge สั่งว่า ต้องการรวมร่าง (merge) PR นะ
-          # ${{ การบอกเลขเลขที่ PR ที่จะให้ลบ 
-          # --merge วิธีการรวม โดยใน git มีหลายวิธี แต่วิธีนี้คือการรวมแบบปกติที่เก็บประวัติไว้ครบถ้วนที่สุด
-          # --auto ถ้า GitHub ยังประมวลผลไม่เสร็จ (Unstable) คำสั่งนี้จะบอกเซิร์ฟเวอร์ว่า ตอนนี้ถ้ายังไม่พร้อมก็ไม่เป็นไร แต่ทันทีที่เช็คเสร็จแล้ว ให้กด Merge ให้ฉันทันทีเลยนะ
           gh pr merge ${{ steps.cpr_step.outputs.pr_number }} --merge --auto
-          
 
-# เหมือนให้ไฟล์นี้สามารถโทรหา auto delete เมื่อcreate-and-mergeทำงานเสร็จ
+  # Job 2: อัปเดตสถานะ Project (ส่วนที่พี่เลี้ยงให้ทำ - ใช้ echo)
+  update_project_status:
+    needs: create-and-merge
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update status via echo
+        run: |
+          # ใช้ echo พิมพ์สถานะงาน (โจทย์พี่เลี้ยง)
+          echo "✅ การ Merge PR #${{ needs.create-and-merge.outputs.pr_number }} สำเร็จแล้ว"
+          echo "ขั้นตอนถัดไป: กำลังสั่งเปลี่ยนสถานะใน Project เป็น DONE"
+          
+          # ในอนาคตคุณจะใช้คำสั่ง gh project item-edit ตรงนี้
+          echo "Status updated to Done successfully."
+
+  # Job 3: โทรหาไฟล์ลบ Branch
+  # เหมือนให้ไฟล์นี้สามารถโทรหา auto delete
   call-delete-job:
-      needs: create-and-merge
-      if: success()
-      uses: ./.github/workflows/auto-delete.yml # ที่อยู้
-      secrets: inherit
+    needs: update_project_status # ให้รออัปเดตสถานะเสร็จก่อนค่อยลบ
+    if: success()
+    uses: ./.github/workflows/auto-delete.yml
+    secrets: inherit
