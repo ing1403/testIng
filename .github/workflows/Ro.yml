@@ -51,7 +51,7 @@ jobs:
           sleep 7
           echo "กำลังทำการ Merge PR หมายเลข ${{ steps.cpr_step.outputs.pr_number }}..."
           # ใช้คำสั่ง gh (GitHub CLI) เพื่อทำการ Merge เข้ากิ่ง main
-          gh pr merge ${{ steps.cpr_step.outputs.pr_number }} --merge --auto
+          gh pr merge ${{ steps.cpr_step.outputs.pr_number }} --merge --admin
 
   # Job 3: โทรหาไฟล์ลบ Branch
   # เหมือนให้ไฟล์นี้สามารถโทรหา auto delete
